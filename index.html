@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StyleAge — 연령별 코디 추천</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg-gradient"></div>
+
+  <header class="header">
+    <div class="logo">
+      <span class="logo-icon">✦</span>
+      <span class="logo-text">StyleAge</span>
+    </div>
+    <p class="tagline">나이에 맞는 스타일, 오늘의 코디</p>
+  </header>
+
+  <main class="main">
+    <section class="panel controls">
+      <h1>연령별 코디 추천</h1>
+      <p class="subtitle">나이와 상황을 선택하면 어울리는 스타일을 추천해 드립니다.</p>
+
+      <div class="control-group">
+        <label for="age">나이</label>
+        <div class="age-input-row">
+          <input type="range" id="age" min="10" max="70" value="25" aria-describedby="age-display">
+          <output id="age-display" for="age">25세</output>
+        </div>
+        <div class="age-badges" id="age-badges"></div>
+      </div>
+
+      <div class="control-row">
+        <div class="control-group">
+          <label for="gender">성별</label>
+          <select id="gender">
+            <option value="all">전체</option>
+            <option value="female">여성</option>
+            <option value="male">남성</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="season">계절</label>
+          <select id="season">
+            <option value="spring">봄</option>
+            <option value="summer">여름</option>
+            <option value="autumn">가을</option>
+            <option value="winter">겨울</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="occasion">상황</label>
+          <select id="occasion">
+            <option value="daily">일상</option>
+            <option value="office">출근·미팅</option>
+            <option value="date">데이트</option>
+            <option value="formal">격식</option>
+            <option value="casual">캐주얼</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="button" class="btn-primary" id="recommend-btn">
+        코디 추천 받기
+      </button>
+    </section>
+
+    <section class="panel result" id="result-section" hidden>
+      <div class="result-header">
+        <div>
+          <span class="result-label" id="result-label">20대 · 일상</span>
+          <h2 id="result-title">오늘의 추천 코디</h2>
+        </div>
+        <button type="button" class="btn-ghost" id="shuffle-btn" title="다른 코디 보기">↻ 다시 추천</button>
+      </div>
+      <p class="result-tip" id="result-tip"></p>
+      <div class="outfit-grid" id="outfit-grid"></div>
+    </section>
+
+    <section class="panel guide" id="guide-section">
+      <h2>연령대별 스타일 가이드</h2>
+      <div class="guide-grid" id="guide-grid"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>StyleAge · HTML · CSS · JavaScript · GPT 코디 어시스턴트</p>
+  </footer>
+
+  <!-- GPT 코디 챗봇 -->
+  <button type="button" class="chat-fab" id="chat-fab" aria-label="코디 챗봇 열기">
+    <span class="chat-fab-icon">💬</span>
+    <span class="chat-fab-label">코디 상담</span>
+  </button>
+
+  <div class="chat-panel" id="chat-panel" hidden aria-hidden="true">
+    <div class="chat-header">
+      <div class="chat-header-info">
+        <span class="chat-avatar">✦</span>
+        <div>
+          <strong>StyleAge AI</strong>
+          <span class="chat-status" id="chat-status">연령별 코디 전문 어시스턴트</span>
+        </div>
+      </div>
+      <div class="chat-header-actions">
+        <button type="button" class="chat-icon-btn" id="chat-settings-btn" title="API 설정">⚙</button>
+        <button type="button" class="chat-icon-btn" id="chat-close-btn" title="닫기">✕</button>
+      </div>
+    </div>
+
+    <div class="chat-settings" id="chat-settings" hidden>
+      <p class="chat-settings-title">OpenAI API 설정</p>
+      <label for="gpt-api-key">API Key</label>
+      <div class="api-key-row">
+        <input type="password" id="gpt-api-key" placeholder="sk-..." autocomplete="off">
+        <button type="button" class="btn-ghost" id="toggle-api-key">표시</button>
+      </div>
+      <label for="gpt-model">모델</label>
+      <select id="gpt-model">
+        <option value="gpt-4o-mini">gpt-4o-mini (추천)</option>
+        <option value="gpt-4o">gpt-4o</option>
+        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+      </select>
+      <label for="gpt-proxy-url">프록시 URL (선택)</label>
+      <input type="text" id="gpt-proxy-url" placeholder="http://localhost:3000/api/chat">
+      <p class="chat-settings-note">
+        API 키는 브라우저에만 저장됩니다. CORS 오류 시 <code>node server.js</code>로 프록시를 실행하세요.
+      </p>
+      <button type="button" class="btn-primary btn-sm" id="save-api-btn">설정 저장</button>
+    </div>
+
+    <div class="chat-messages" id="chat-messages" role="log" aria-live="polite"></div>
+
+    <div class="chat-suggestions" id="chat-suggestions">
+      <button type="button" class="suggestion-chip" data-msg="25세 여성, 봄 데이트 코디 추천해줘">데이트 코디</button>
+      <button type="button" class="suggestion-chip" data-msg="40대 남성 출근룩 어떻게 입으면 좋을까?">출근룩</button>
+      <button type="button" class="suggestion-chip" data-msg="현재 선택한 조건에 맞는 코디 알려줘">현재 조건 추천</button>
+    </div>
+
+    <form class="chat-input-area" id="chat-form">
+      <textarea id="chat-input" rows="1" placeholder="코디 고민을 물어보세요..." maxlength="500"></textarea>
+      <button type="submit" class="chat-send-btn" id="chat-send-btn" aria-label="전송">↑</button>
+    </form>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    (function () {
+      const STORAGE_KEY = "styleage_gpt_config";
+
+      const GPT_CONFIG = {
+        apiKey: "",
+        model: "gpt-4o-mini",
+        proxyUrl: "",
+        openaiUrl: "https://api.openai.com/v1/chat/completions",
+      };
+
+      const chatFab = document.getElementById("chat-fab");
+      const chatPanel = document.getElementById("chat-panel");
+      const chatCloseBtn = document.getElementById("chat-close-btn");
+      const chatSettingsBtn = document.getElementById("chat-settings-btn");
+      const chatSettings = document.getElementById("chat-settings");
+      const chatMessages = document.getElementById("chat-messages");
+      const chatForm = document.getElementById("chat-form");
+      const chatInput = document.getElementById("chat-input");
+      const chatSendBtn = document.getElementById("chat-send-btn");
+      const chatStatus = document.getElementById("chat-status");
+      const gptApiKeyInput = document.getElementById("gpt-api-key");
+      const gptModelSelect = document.getElementById("gpt-model");
+      const gptProxyInput = document.getElementById("gpt-proxy-url");
+      const saveApiBtn = document.getElementById("save-api-btn");
+      const toggleApiKeyBtn = document.getElementById("toggle-api-key");
+      const suggestionChips = document.querySelectorAll(".suggestion-chip");
+
+      let chatHistory = [];
+      let isLoading = false;
+
+      function loadConfig() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+          GPT_CONFIG.apiKey = saved.apiKey || "";
+          GPT_CONFIG.model = saved.model || "gpt-4o-mini";
+          GPT_CONFIG.proxyUrl = saved.proxyUrl || "";
+          gptApiKeyInput.value = GPT_CONFIG.apiKey;
+          gptModelSelect.value = GPT_CONFIG.model;
+          gptProxyInput.value = GPT_CONFIG.proxyUrl;
+        } catch (_) {}
+      }
+
+      function closeSettings() {
+        chatSettings.hidden = true;
+        chatSettings.setAttribute("hidden", "");
+      }
+
+      function openSettings() {
+        chatSettings.hidden = false;
+        chatSettings.removeAttribute("hidden");
+      }
+
+      function saveConfig() {
+        GPT_CONFIG.apiKey = gptApiKeyInput.value.trim();
+        GPT_CONFIG.model = gptModelSelect.value;
+        GPT_CONFIG.proxyUrl = gptProxyUrlTrim();
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            apiKey: GPT_CONFIG.apiKey,
+            model: GPT_CONFIG.model,
+            proxyUrl: GPT_CONFIG.proxyUrl,
+          })
+        );
+        chatStatus.textContent = GPT_CONFIG.apiKey ? "API 연결 준비 완료" : "API 키를 설정해 주세요";
+        closeSettings();
+        appendBotMessage("설정이 저장되었습니다. 이제 코디 상담을 시작할 수 있어요!");
+      }
+
+      function gptProxyUrlTrim() {
+        return gptProxyInput.value.trim().replace(/\/$/, "");
+      }
+
+      function getPageContext() {
+        const age = document.getElementById("age")?.value || "25";
+        const gender = document.getElementById("gender");
+        const season = document.getElementById("season");
+        const occasion = document.getElementById("occasion");
+        const genderText = gender?.selectedOptions[0]?.text || "전체";
+        const seasonText = season?.selectedOptions[0]?.text || "봄";
+        const occasionText = occasion?.selectedOptions[0]?.text || "일상";
+        return `현재 페이지 선택: 나이 ${age}세, 성별 ${genderText}, 계절 ${seasonText}, 상황 ${occasionText}`;
+      }
+
+      function buildSystemPrompt() {
+        return [
+          "당신은 StyleAge의 연령별 패션·코디 전문 AI 어시스턴트입니다.",
+          "사용자의 나이, 성별, 계절, 상황(일상/출근/데이트/격식/캐주얼)에 맞는 구체적인 코디를 한국어로 추천하세요.",
+          "답변 형식: ① 한 줄 요약 ② 상·하의·신발·액세서리 ③ 연령대별 포인트 ④ 피해야 할 스타일(1가지).",
+          "친근하고 실용적으로 답하되, 과장된 마케팅 문구는 피하세요.",
+          getPageContext(),
+        ].join("\n");
+      }
+
+      function openChat() {
+        chatPanel.hidden = false;
+        chatPanel.setAttribute("aria-hidden", "false");
+        chatFab.hidden = true;
+        if (chatMessages.children.length === 0) {
+          appendBotMessage(
+            "안녕하세요! StyleAge AI입니다 ✦\n나이·상황·취향에 맞는 코디를 도와드릴게요.\n⚙ 버튼에서 OpenAI API 키를 먼저 설정해 주세요."
+          );
+        }
+        chatInput.focus();
+      }
+
+      function closeChat() {
+        chatPanel.hidden = true;
+        chatPanel.setAttribute("aria-hidden", "true");
+        chatFab.hidden = false;
+      }
+
+      function toggleSettings() {
+        if (chatSettings.hidden) openSettings();
+        else closeSettings();
+      }
+
+      function appendMessage(text, role) {
+        const wrap = document.createElement("div");
+        wrap.className = `chat-msg chat-msg--${role}`;
+        const bubble = document.createElement("div");
+        bubble.className = "chat-bubble";
+        bubble.textContent = text;
+        wrap.appendChild(bubble);
+        chatMessages.appendChild(wrap);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return wrap;
+      }
+
+      function appendBotMessage(text) {
+        return appendMessage(text, "bot");
+      }
+
+      function appendUserMessage(text) {
+        return appendMessage(text, "user");
+      }
+
+      function appendTypingIndicator() {
+        const wrap = document.createElement("div");
+        wrap.className = "chat-msg chat-msg--bot";
+        wrap.id = "typing-indicator";
+        wrap.innerHTML = '<div class="chat-bubble chat-bubble--typing"><span></span><span></span><span></span></div>';
+        chatMessages.appendChild(wrap);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return wrap;
+      }
+
+      function removeTypingIndicator() {
+        document.getElementById("typing-indicator")?.remove();
+      }
+
+      async function callGptApi(userMessage) {
+        const messages = [
+          { role: "system", content: buildSystemPrompt() },
+          ...chatHistory,
+          { role: "user", content: userMessage },
+        ];
+
+        const body = {
+          model: GPT_CONFIG.model,
+          messages,
+          temperature: 0.7,
+          max_tokens: 800,
+        };
+
+        const proxyUrl = GPT_CONFIG.proxyUrl || gptProxyUrlTrim();
+
+        if (proxyUrl) {
+          const res = await fetch(proxyUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ apiKey: GPT_CONFIG.apiKey, ...body }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error?.message || err.message || `프록시 오류 (${res.status})`);
+          }
+          const data = await res.json();
+          return data.choices?.[0]?.message?.content?.trim() || "응답을 받지 못했습니다.";
+        }
+
+        if (!GPT_CONFIG.apiKey) {
+          throw new Error("API 키가 설정되지 않았습니다. ⚙ 버튼에서 OpenAI API 키를 입력해 주세요.");
+        }
+
+        const res = await fetch(GPT_CONFIG.openaiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${GPT_CONFIG.apiKey}`,
+          },
+          body: JSON.stringify(body),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          const msg = err.error?.message || `API 오류 (${res.status})`;
+          if (res.status === 401) throw new Error("API 키가 올바르지 않습니다. 키를 확인해 주세요.");
+          if (msg.includes("CORS") || res.status === 0) {
+            throw new Error("브라우저 CORS 제한입니다. node server.js 로 프록시를 실행한 뒤 프록시 URL을 설정하세요.");
+          }
+          throw new Error(msg);
+        }
+
+        const data = await res.json();
+        return data.choices?.[0]?.message?.content?.trim() || "응답을 받지 못했습니다.";
+      }
+
+      async function sendMessage(rawText) {
+        const text = rawText.trim();
+        if (!text || isLoading) return;
+
+        if (!GPT_CONFIG.apiKey && !gptProxyUrlTrim()) {
+          openSettings();
+          chatStatus.textContent = "API 키 필요";
+          appendBotMessage("먼저 ⚙ 설정에서 OpenAI API 키를 입력하고 저장해 주세요.");
+          return;
+        }
+
+        appendUserMessage(text);
+        chatInput.value = "";
+        chatInput.style.height = "auto";
+        isLoading = true;
+        chatSendBtn.disabled = true;
+        chatStatus.textContent = "답변 생성 중...";
+        appendTypingIndicator();
+
+        try {
+          const reply = await callGptApi(text);
+          removeTypingIndicator();
+          appendBotMessage(reply);
+          chatHistory.push({ role: "user", content: text });
+          chatHistory.push({ role: "assistant", content: reply });
+          if (chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
+          chatStatus.textContent = "온라인";
+        } catch (err) {
+          removeTypingIndicator();
+          appendBotMessage(`⚠ ${err.message}`);
+          chatStatus.textContent = "오류 발생";
+        } finally {
+          isLoading = false;
+          chatSendBtn.disabled = false;
+        }
+      }
+
+      chatFab.addEventListener("click", openChat);
+      chatCloseBtn.addEventListener("click", closeChat);
+      chatSettingsBtn.addEventListener("click", toggleSettings);
+      saveApiBtn.addEventListener("click", saveConfig);
+
+      toggleApiKeyBtn.addEventListener("click", () => {
+        const isPassword = gptApiKeyInput.type === "password";
+        gptApiKeyInput.type = isPassword ? "text" : "password";
+        toggleApiKeyBtn.textContent = isPassword ? "숨김" : "표시";
+      });
+
+      chatForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        sendMessage(chatInput.value);
+      });
+
+      chatInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage(chatInput.value);
+        }
+      });
+
+      chatInput.addEventListener("input", () => {
+        chatInput.style.height = "auto";
+        chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + "px";
+      });
+
+      suggestionChips.forEach((chip) => {
+        chip.addEventListener("click", () => {
+          let msg = chip.dataset.msg;
+          if (msg.includes("현재 선택")) {
+            msg = getPageContext() + "에 어울리는 코디 2가지를 구체적으로 추천해줘.";
+          }
+          sendMessage(msg);
+        });
+      });
+
+      loadConfig();
+      chatStatus.textContent = GPT_CONFIG.apiKey ? "API 연결 준비 완료" : "API 키를 설정해 주세요";
+    })();
+  </script>
+</body>
+</html>
